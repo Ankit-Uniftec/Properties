@@ -64,9 +64,16 @@ export default function PropertyDetailScreen() {
 
       {/* ---- Buttons Row ---- */}
       <View style={styles.btnRow}>
-        <TouchableOpacity style={styles.blueBtn}>
+        <TouchableOpacity
+          style={styles.blueBtn}
+          onPress={() => router.push({
+            pathname: "/RegisterProperty",
+            params: { property: JSON.stringify(prop) } // pass current property if needed
+          })}
+        >
           <Text style={styles.btnText}>Register this property</Text>
         </TouchableOpacity>
+
         <TouchableOpacity style={styles.greenBtn}>
           <Text style={styles.btnText}>Interested in buying?</Text>
         </TouchableOpacity>

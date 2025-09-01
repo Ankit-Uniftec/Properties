@@ -1,18 +1,19 @@
-import { useEffect, useState } from 'react';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { app } from '../firebase';
+// hooks/useAuth.ts
+import { getAuth, onAuthStateChanged, User } from "firebase/auth";
+import { useEffect, useState } from "react";
 
 export function useAuth() {
-  const [user, setUser] = useState<import('firebase/auth').User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const auth = getAuth(app);
+    const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
     });
-    return unsubscribe;
+
+    return unsubscribe; // cleanup
   }, []);
 
   return { user, loading };

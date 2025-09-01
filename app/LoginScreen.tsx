@@ -30,7 +30,7 @@ export default function LoginScreen({ onLogin }: { onLogin: () => void }) {
     const auth = getAuth();
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      onLogin(); // callback when login successful
+      // callback when login successful
     } catch (error: any) {
       Alert.alert("Login Failed", error.message || "An unknown error occurred");
     } finally {
