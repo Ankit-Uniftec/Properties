@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { useState } from "react";
@@ -19,7 +19,8 @@ import { auth, db, storage } from "../firebase";
 
 export default function RegisterProperty() {
   const router = useRouter();
-
+  const { property } = useLocalSearchParams();
+  const prop = property ? JSON.parse(property) : null;
   const [selectedType, setSelectedType] = useState("Farmhouse");
   const [multipleOwners, setMultipleOwners] = useState(true);
   const [ownerName, setOwnerName] = useState("");
@@ -42,41 +43,41 @@ export default function RegisterProperty() {
   ];
 
   // pick document
- const pickDocument = async (setFile) => {
-  try {
-    const result = await DocumentPicker.getDocumentAsync({
-      type: "*/*",
-      copyToCacheDirectory: true,
-    });
+  const pickDocument = async (setFile) => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "*/*",
+        copyToCacheDirectory: true,
+      });
 
-    if (!result.canceled) {
-      const doc = result.assets[0]; // 👈 use first asset
-      setFile(doc);
+      if (!result.canceled) {
+        const doc = result.assets[0]; // 👈 use first asset
+        setFile(doc);
+      }
+    } catch (error) {
+      console.log("Document pick error:", error);
     }
-  } catch (error) {
-    console.log("Document pick error:", error);
-  }
-};
+  };
 
 
   // upload file to firebase storage
- const uploadFile = async (file, folder) => {
-  if (!file) return null;
-  try {
-    // fetch the file and convert to blob
-    const response = await fetch(file.uri);
-    const blob = await response.blob();
+  const uploadFile = async (file, folder) => {
+    if (!file) return null;
+    try {
+      // fetch the file and convert to blob
+      const response = await fetch(file.uri);
+      const blob = await response.blob();
 
-    const fileRef = ref(storage, `${folder}/${Date.now()}_${file.name}`);
-    await uploadBytes(fileRef, blob);
+      const fileRef = ref(storage, `${folder}/${Date.now()}_${file.name}`);
+      await uploadBytes(fileRef, blob);
 
-    const downloadURL = await getDownloadURL(fileRef);
-    return downloadURL;
-  } catch (error) {
-    console.log("Upload error:", error);
-    return null;
-  }
-};
+      const downloadURL = await getDownloadURL(fileRef);
+      return downloadURL;
+    } catch (error) {
+      console.log("Upload error:", error);
+      return null;
+    }
+  };
 
 
   // handle submit
@@ -97,7 +98,19 @@ export default function RegisterProperty() {
       // save to firestore
       const user = auth.currentUser;
       await addDoc(collection(db, "properties"), {
-        type: selectedType,
+        // Keep original property ID for lookup
+        originalPropertyId: prop?.id || null,
+
+        // From PropertyDetailScreen
+        title: prop?.title || "",
+        thumbnailURL: prop?.thumbnailURL || "",
+        location: prop?.location || "",
+        rate: prop?.rate || "",
+        type: prop?.type || selectedType,
+        description: prop?.description || "",
+        otherPhotoURLs: prop?.otherPhotoURLs || [],
+
+        // From RegisterProperty form
         address: propertyAddress,
         multipleOwners,
         ownerName,
@@ -108,9 +121,13 @@ export default function RegisterProperty() {
           otherDocs: otherDocsURL,
         },
         ownerId: user ? user.uid : null,
+
+        // Workflow
         status: "pending",
         createdAt: serverTimestamp(),
       });
+
+
 
       setLoading(false);
       Alert.alert("Success", "Property registered successfully!");

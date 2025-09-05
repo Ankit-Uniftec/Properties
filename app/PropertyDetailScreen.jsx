@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { useEffect, useState } from "react";
 import {
   Dimensions,
   FlatList,
@@ -11,6 +12,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { db } from "../firebase"; // make sure firebase is set up correctly
 
 export default function PropertyDetailScreen() {
   const router = useRouter();
@@ -18,28 +20,46 @@ export default function PropertyDetailScreen() {
   const prop = JSON.parse(property);
 
   const [activeTab, setActiveTab] = useState("Description");
+  const [isRegistered, setIsRegistered] = useState(false);
+
+  useEffect(() => {
+    const checkRegistration = async () => {
+      try {
+        const q = query(
+          collection(db, "properties"),
+          where("originalPropertyId", "==", prop.id)
+        );
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          setIsRegistered(true);
+        }
+      } catch (err) {
+        console.error("Error checking registration:", err);
+      }
+    };
+
+    checkRegistration();
+  }, [prop.id]);
 
   return (
     <View style={styles.container}>
       {/* ---- Main Image ---- */}
       <Image source={{ uri: prop.thumbnailURL }} style={styles.mainImage} />
 
-      {/* ---- Overlay: Back + Tags ---- */}
+      {/* ---- Overlay: Back ---- */}
       <View style={styles.overlayHeader}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-
-
       </View>
+
+      {/* ---- Info Row ---- */}
       <View style={styles.infoRow}>
-        {/* Rating (left) */}
         <View style={styles.ratingBox}>
           <Ionicons name="star" size={14} color="#FFD700" />
           <Text style={styles.ratingText}>4.7 (6.8k)</Text>
         </View>
 
-        {/* Rate + Type (right) */}
         <View style={styles.tagRow}>
           {prop.rate && (
             <View style={styles.tag}>
@@ -54,7 +74,6 @@ export default function PropertyDetailScreen() {
         </View>
       </View>
 
-
       {/* ---- Title + Location ---- */}
       <Text style={styles.title}>{prop.title}</Text>
       <View style={styles.locationRow}>
@@ -64,15 +83,23 @@ export default function PropertyDetailScreen() {
 
       {/* ---- Buttons Row ---- */}
       <View style={styles.btnRow}>
-        <TouchableOpacity
-          style={styles.blueBtn}
-          onPress={() => router.push({
-            pathname: "/RegisterProperty",
-            params: { property: JSON.stringify(prop) } // pass current property if needed
-          })}
-        >
-          <Text style={styles.btnText}>Register this property</Text>
-        </TouchableOpacity>
+        {isRegistered ? (
+          <View style={[styles.blueBtn, { backgroundColor: "#ccc" }]}>
+            <Text style={styles.btnText}>Registered</Text>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.blueBtn}
+            onPress={() =>
+              router.push({
+                pathname: "/RegisterProperty",
+                params: { property: JSON.stringify(prop) }
+              })
+            }
+          >
+            <Text style={styles.btnText}>Register this property</Text>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity style={styles.greenBtn}>
           <Text style={styles.btnText}>Interested in buying?</Text>
@@ -82,7 +109,7 @@ export default function PropertyDetailScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* ---- Tab Bar ---- */}
+      {/* ---- Tabs ---- */}
       <View style={styles.tabRow}>
         {["Description", "Gallery", "Reviews", "Explore"].map((tab) => (
           <TouchableOpacity
@@ -103,8 +130,7 @@ export default function PropertyDetailScreen() {
         ))}
       </View>
 
-      {/* ---- Content (depends on tab) ---- */}
-
+      {/* ---- Tab Content ---- */}
       <View style={styles.content}>
         {activeTab === "Description" && (
           <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
@@ -114,7 +140,7 @@ export default function PropertyDetailScreen() {
 
         {activeTab === "Gallery" && (
           <FlatList
-            data={prop.otherPhotoURLs}
+            data={prop.otherPhotoURLs || []}
             keyExtractor={(item, index) => index.toString()}
             numColumns={2}
             showsVerticalScrollIndicator={false}
@@ -137,33 +163,29 @@ export default function PropertyDetailScreen() {
           </ScrollView>
         )}
       </View>
-
     </View>
   );
 }
+
 const windowHeight = Dimensions.get("window").height;
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
 
-  mainImage: {
-    width: "100%",
-    height: windowHeight * 0.35,
-  },
+  mainImage: { width: "100%", height: windowHeight * 0.35 },
 
   overlayHeader: {
     position: "absolute",
     top: 40,
     left: 16,
-    right: 16,
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
   },
   backBtn: {
     backgroundColor: "rgba(0,0,0,0.4)",
     padding: 6,
     borderRadius: 20,
   },
+
   infoRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -171,12 +193,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 12,
   },
-
-  tagRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
   ratingBox: {
     flexDirection: "row",
     alignItems: "center",
@@ -187,6 +203,7 @@ const styles = StyleSheet.create({
   },
   ratingText: { fontSize: 12, fontWeight: "600", marginLeft: 4 },
 
+  tagRow: { flexDirection: "row", alignItems: "center" },
   tag: {
     backgroundColor: "#FFF4E5",
     paddingVertical: 4,
@@ -195,7 +212,6 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   tagText: { fontSize: 12, fontWeight: "600", color: "#FF8A00" },
-
 
   title: { fontSize: 20, fontWeight: "700", marginHorizontal: 16, marginTop: 12 },
   locationRow: {
@@ -253,13 +269,12 @@ const styles = StyleSheet.create({
 
   content: { flex: 1, padding: 16 },
   description: { fontSize: 14, color: "#333", lineHeight: 20 },
-
   galleryImage: {
     width: "48%",
     height: 120,
     borderRadius: 8,
     margin: "1%",
   },
-
   placeholder: { fontSize: 14, color: "#666" },
 });
+
