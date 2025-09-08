@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, serverTimestamp } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -19,8 +19,11 @@ import { auth, db, storage } from "../firebase";
 
 export default function RegisterProperty() {
   const router = useRouter();
-  const { property } = useLocalSearchParams();
-  const prop = property ? JSON.parse(property) : null;
+  const { id } = useLocalSearchParams(); // ✅ we now get only id
+  const [prop, setProp] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  // form states
   const [selectedType, setSelectedType] = useState("Farmhouse");
   const [multipleOwners, setMultipleOwners] = useState(true);
   const [ownerName, setOwnerName] = useState("");
@@ -32,8 +35,6 @@ export default function RegisterProperty() {
   const [registryCopy, setRegistryCopy] = useState(null);
   const [otherDocs, setOtherDocs] = useState(null);
 
-  const [loading, setLoading] = useState(false);
-
   const propertyTypes = [
     { label: "Apartment", icon: "business" },
     { label: "House", icon: "home" },
@@ -41,6 +42,23 @@ export default function RegisterProperty() {
     { label: "Floor", icon: "layers" },
     { label: "Office", icon: "briefcase" },
   ];
+
+  // ✅ Fetch property by ID
+  useEffect(() => {
+    const fetchProperty = async () => {
+      try {
+        if (!id) return;
+        const docRef = doc(db, "properties", id);
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+          setProp({ id: snap.id, ...snap.data() });
+        }
+      } catch (err) {
+        console.error("Error fetching property:", err);
+      }
+    };
+    fetchProperty();
+  }, [id]);
 
   // pick document
   const pickDocument = async (setFile) => {
@@ -51,7 +69,7 @@ export default function RegisterProperty() {
       });
 
       if (!result.canceled) {
-        const doc = result.assets[0]; // 👈 use first asset
+        const doc = result.assets[0];
         setFile(doc);
       }
     } catch (error) {
@@ -59,26 +77,20 @@ export default function RegisterProperty() {
     }
   };
 
-
   // upload file to firebase storage
   const uploadFile = async (file, folder) => {
     if (!file) return null;
     try {
-      // fetch the file and convert to blob
       const response = await fetch(file.uri);
       const blob = await response.blob();
-
       const fileRef = ref(storage, `${folder}/${Date.now()}_${file.name}`);
       await uploadBytes(fileRef, blob);
-
-      const downloadURL = await getDownloadURL(fileRef);
-      return downloadURL;
+      return await getDownloadURL(fileRef);
     } catch (error) {
       console.log("Upload error:", error);
       return null;
     }
   };
-
 
   // handle submit
   const handleSubmit = async () => {
@@ -86,7 +98,6 @@ export default function RegisterProperty() {
       Alert.alert("Missing Fields", "Please fill all required fields.");
       return;
     }
-
     try {
       setLoading(true);
 
@@ -95,22 +106,24 @@ export default function RegisterProperty() {
       const registryCopyURL = await uploadFile(registryCopy, "documents");
       const otherDocsURL = await uploadFile(otherDocs, "documents");
 
+      // ✅ decide thumbnail: use prop thumbnail
+      const thumbnailURL = prop?.thumbnailURL || null;
+
       // save to firestore
       const user = auth.currentUser;
       await addDoc(collection(db, "properties"), {
-        // Keep original property ID for lookup
         originalPropertyId: prop?.id || null,
 
-        // From PropertyDetailScreen
+        // from PropertyDetailScreen
         title: prop?.title || "",
-        thumbnailURL: prop?.thumbnailURL || "",
+        thumbnailURL,
         location: prop?.location || "",
         rate: prop?.rate || "",
         type: prop?.type || selectedType,
         description: prop?.description || "",
         otherPhotoURLs: prop?.otherPhotoURLs || [],
 
-        // From RegisterProperty form
+        // from RegisterProperty form
         address: propertyAddress,
         multipleOwners,
         ownerName,
@@ -122,12 +135,9 @@ export default function RegisterProperty() {
         },
         ownerId: user ? user.uid : null,
 
-        // Workflow
         status: "pending",
         createdAt: serverTimestamp(),
       });
-
-
 
       setLoading(false);
       Alert.alert("Success", "Property registered successfully!");
@@ -154,7 +164,6 @@ export default function RegisterProperty() {
         contentContainerStyle={{ paddingBottom: 30 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Property Details */}
         <Text style={styles.sectionTitle}>Property Details</Text>
         <View style={styles.card}>
           <Text style={styles.label}>Type of Property</Text>
@@ -241,8 +250,7 @@ export default function RegisterProperty() {
 
           <Text style={styles.label}>Owner’s Name</Text>
           <Text style={styles.helperText}>
-            (Entered name must match with the name as mentioned on the ownership
-            documents)
+            (Must match the name on ownership documents)
           </Text>
           <TextInput
             placeholder="Enter owner’s full name"
@@ -285,17 +293,18 @@ const styles = StyleSheet.create({
   header: {
     padding: 16,
     marginTop: 25,
+    flexDirection: "row",
+    alignItems: "center",
   },
   backBtn: {
     backgroundColor: "#f1f1f1",
     padding: 6,
     borderRadius: 20,
-    alignSelf: "flex-start",
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: "700",
-    marginTop: 12,
+    marginLeft: 12,
     color: "#007AFF",
   },
 

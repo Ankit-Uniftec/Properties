@@ -53,7 +53,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyB01UkGcMTE1C5kP165UL5KYe0hGe9F-LA",
   authDomain: "properties-1938e.firebaseapp.com",
   projectId: "properties-1938e",
-  storageBucket: "properties-1938e.appspot.com", // 👈 fix ".app" to ".appspot.com"
+  storageBucket: "properties-1938e.firebasestorage.app", // 👈 fix ".app" to ".appspot.com"
   messagingSenderId: "17595301841",
   appId: "1:17595301841:web:417f226ec368a15eb1aaf0",
   measurementId: "G-KVE1659DRS",

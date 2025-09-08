@@ -13,6 +13,7 @@
 // } from "react-native";
 
 // // 🔹 Firebase imports
+// import { useRouter } from "expo-router"; // ✅ navigation
 // import { collection, getDocs } from "firebase/firestore";
 // import { auth, db } from "../firebase";
 
@@ -20,6 +21,7 @@
 //   const [location, setLocation] = useState<string>("Fetching...");
 //   const [selectedCategory, setSelectedCategory] = useState("All");
 //   const [properties, setProperties] = useState<any[]>([]);
+//   const router = useRouter(); // ✅ router hook
 
 //   // ✅ Fetch user location
 //   useEffect(() => {
@@ -63,25 +65,36 @@
 //           (p) => p.category?.toLowerCase() === selectedCategory.toLowerCase()
 //         );
 
+//   // ✅ Card Renderer with Navigation
+//   const renderCard = (item: any) => (
+//     <TouchableOpacity
+//       style={styles.card}
+//       onPress={() =>
+//         router.push({
+//           pathname: "/PropertyDetailScreen",
+//           params: { property: JSON.stringify(item) }, // ✅ pass property
+//         })
+//       }
+//     >
+//       <Image source={{ uri: item.thumbnailURL }} style={styles.cardImage} />
+//       <Text style={styles.cardTitle}>{item.title}</Text>
+//       <Text style={styles.cardTitle}>
+//         <Ionicons name="location-outline" size={10} color="black" />{" "}
+//         {item.location}
+//       </Text>
+//     </TouchableOpacity>
+//   );
+
 //   return (
 //     <FlatList
-//       key={selectedCategory === "All" ? "one-column" : "two-columns"} // ✅ Force re-render on numColumns change
+//       key={selectedCategory === "All" ? "one-column" : "two-columns"}
 //       data={selectedCategory === "All" ? [] : filteredProperties}
 //       keyExtractor={(item) => item.id}
 //       numColumns={selectedCategory === "All" ? 1 : 2}
 //       renderItem={
 //         selectedCategory === "All"
 //           ? null
-//           : ({ item }) => (
-//               <View style={styles.card}>
-//                 <Image
-//                   source={{ uri: item.thumbnailURL }}
-//                   style={styles.cardImage}
-//                 />
-//                 <Text style={styles.cardTitle}>{item.title}</Text>
-//                 <Text style={styles.cardTitle}><Ionicons name="location-outline" size={10} color="black" /> {item.location}</Text>
-//               </View>
-//             )
+//           : ({ item }) => renderCard(item)
 //       }
 //       ListHeaderComponent={
 //         <View style={styles.container}>
@@ -138,11 +151,20 @@
 //             style={styles.carousel}
 //           >
 //             {properties.map((item) => (
-//               <Image
+//               <TouchableOpacity
 //                 key={item.id}
-//                 source={{ uri: item.thumbnailURL }}
-//                 style={styles.carouselImage}
-//               />
+//                 onPress={() =>
+//                   router.push({
+//                     pathname: "/PropertyDetailScreen",
+//                     params: { property: JSON.stringify(item) },
+//                   })
+//                 }
+//               >
+//                 <Image
+//                   source={{ uri: item.thumbnailURL }}
+//                   style={styles.carouselImage}
+//                 />
+//               </TouchableOpacity>
 //             ))}
 //           </ScrollView>
 
@@ -191,16 +213,7 @@
 //                 <FlatList
 //                   horizontal
 //                   data={properties.filter((p) => p.category === "New Project")}
-//                   renderItem={({ item }) => (
-//                     <View style={styles.card}>
-//                       <Image
-//                         source={{ uri: item.thumbnailURL }}
-//                         style={styles.cardImage}
-//                       />
-//                       <Text style={styles.cardTitle}>{item.title}</Text>
-//                       <Text style={styles.cardTitle}><Ionicons name="location-outline" size={10} color="black" /> {item.location}</Text>
-//                     </View>
-//                   )}
+//                   renderItem={({ item }) => renderCard(item)}
 //                   keyExtractor={(item) => item.id}
 //                   showsHorizontalScrollIndicator={false}
 //                 />
@@ -216,19 +229,8 @@
 //                 </View>
 //                 <FlatList
 //                   horizontal
-//                   data={properties.filter(
-//                     (p) => p.category === "Luxury Project"
-//                   )}
-//                   renderItem={({ item }) => (
-//                     <View style={styles.card}>
-//                       <Image
-//                         source={{ uri: item.thumbnailURL }}
-//                         style={styles.cardImage}
-//                       />
-//                       <Text style={styles.cardTitle}>{item.title}</Text>
-//                       <Text style={styles.cardTitle}><Ionicons name="location-outline" size={10} color="black" /> {item.location}</Text>
-//                     </View>
-//                   )}
+//                   data={properties.filter((p) => p.category === "Luxury Project")}
+//                   renderItem={({ item }) => renderCard(item)}
 //                   keyExtractor={(item) => item.id}
 //                   showsHorizontalScrollIndicator={false}
 //                 />
@@ -302,8 +304,6 @@
 //   cardImage: { width: "100%", height: 90, borderRadius: 8, marginBottom: 6 },
 //   cardTitle: { fontSize: 13, fontWeight: "500" },
 // });
-
-
 import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import React, { useEffect, useState } from "react";
@@ -319,7 +319,7 @@ import {
 } from "react-native";
 
 // 🔹 Firebase imports
-import { useRouter } from "expo-router"; // ✅ navigation
+import { useRouter } from "expo-router";
 import { collection, getDocs } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
@@ -327,7 +327,7 @@ export default function MainScreen() {
   const [location, setLocation] = useState<string>("Fetching...");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [properties, setProperties] = useState<any[]>([]);
-  const router = useRouter(); // ✅ router hook
+  const router = useRouter();
 
   // ✅ Fetch user location
   useEffect(() => {
@@ -353,14 +353,13 @@ export default function MainScreen() {
       const querySnapshot = await getDocs(collection(db, "properties"));
       const data = querySnapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data(),
+        ...doc.data(),   // ✅ ensures thumbnailURL + otherPhotoURLs included
       }));
       setProperties(data as any);
     };
     fetchProperties();
   }, []);
 
-  // ✅ Firebase Auth user
   const user = auth.currentUser;
 
   // ✅ Filtering logic
@@ -378,7 +377,7 @@ export default function MainScreen() {
       onPress={() =>
         router.push({
           pathname: "/PropertyDetailScreen",
-          params: { property: JSON.stringify(item) }, // ✅ pass property
+          params: { id: item.id }, // ✅ full property with thumbnail + gallery
         })
       }
     >
@@ -462,7 +461,7 @@ export default function MainScreen() {
                 onPress={() =>
                   router.push({
                     pathname: "/PropertyDetailScreen",
-                    params: { property: JSON.stringify(item) },
+                    params: { id:item.id },
                   })
                 }
               >

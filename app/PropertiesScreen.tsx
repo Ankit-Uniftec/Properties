@@ -67,9 +67,9 @@ export default function PropertiesScreen() {
       onPress={() =>
         router.push({
           pathname: "/PropertyDetailScreen",
-          params: { property: JSON.stringify(item) },
+          params: { id:item.id },
         })
-      }
+      }   
     >
       {/* Thumbnail */}
       {item.thumbnailURL ? (

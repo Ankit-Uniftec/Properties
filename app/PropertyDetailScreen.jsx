@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   FlatList,
   Image,
@@ -12,17 +13,38 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import { db } from "../firebase"; // make sure firebase is set up correctly
+import { db } from "../firebase";
 
 export default function PropertyDetailScreen() {
   const router = useRouter();
-  const { property } = useLocalSearchParams();
-  const prop = JSON.parse(property);
+  const { id } = useLocalSearchParams();   // ✅ now we get only id
 
+  const [prop, setProp] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Description");
   const [isRegistered, setIsRegistered] = useState(false);
 
+  // ✅ Fetch property by ID
   useEffect(() => {
+    const fetchProperty = async () => {
+      try {
+        const docRef = doc(db, "properties", id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setProp({ id: docSnap.id, ...docSnap.data() });
+        }
+      } catch (err) {
+        console.error("Error fetching property:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (id) fetchProperty();
+  }, [id]);
+
+  // ✅ Check registration
+  useEffect(() => {
+    if (!prop) return;
     const checkRegistration = async () => {
       try {
         const q = query(
@@ -37,14 +59,31 @@ export default function PropertyDetailScreen() {
         console.error("Error checking registration:", err);
       }
     };
-
     checkRegistration();
-  }, [prop.id]);
+  }, [prop]);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
+  if (!prop) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Text>Property not found.</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       {/* ---- Main Image ---- */}
-      <Image source={{ uri: prop.thumbnailURL }} style={styles.mainImage} />
+      {prop.thumbnailURL && (
+        <Image source={{ uri: prop.thumbnailURL }} style={styles.mainImage} />
+      )}
 
       {/* ---- Overlay: Back ---- */}
       <View style={styles.overlayHeader}>
@@ -68,7 +107,9 @@ export default function PropertyDetailScreen() {
           )}
           {prop.type && (
             <View style={[styles.tag, { backgroundColor: "#EAF4FF" }]}>
-              <Text style={[styles.tagText, { color: "#007AFF" }]}>{prop.type}</Text>
+              <Text style={[styles.tagText, { color: "#007AFF" }]}>
+                {prop.type}
+              </Text>
             </View>
           )}
         </View>
@@ -93,7 +134,8 @@ export default function PropertyDetailScreen() {
             onPress={() =>
               router.push({
                 pathname: "/RegisterProperty",
-                params: { property: JSON.stringify(prop) }
+                params: { id: prop.id},
+                
               })
             }
           >
@@ -141,7 +183,7 @@ export default function PropertyDetailScreen() {
         {activeTab === "Gallery" && (
           <FlatList
             data={prop.otherPhotoURLs || []}
-            keyExtractor={(item, index) => index.toString()}
+            keyExtractor={(item, index) => `${index}-${item}`}
             numColumns={2}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 20 }}
@@ -170,9 +212,7 @@ export default function PropertyDetailScreen() {
 const windowHeight = Dimensions.get("window").height;
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
-
   mainImage: { width: "100%", height: windowHeight * 0.35 },
-
   overlayHeader: {
     position: "absolute",
     top: 40,
@@ -185,7 +225,6 @@ const styles = StyleSheet.create({
     padding: 6,
     borderRadius: 20,
   },
-
   infoRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -202,7 +241,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   ratingText: { fontSize: 12, fontWeight: "600", marginLeft: 4 },
-
   tagRow: { flexDirection: "row", alignItems: "center" },
   tag: {
     backgroundColor: "#FFF4E5",
@@ -212,7 +250,6 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   tagText: { fontSize: 12, fontWeight: "600", color: "#FF8A00" },
-
   title: { fontSize: 20, fontWeight: "700", marginHorizontal: 16, marginTop: 12 },
   locationRow: {
     flexDirection: "row",
@@ -221,7 +258,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   location: { fontSize: 14, color: "#555", marginLeft: 4 },
-
   btnRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -249,7 +285,6 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 8,
   },
-
   tabRow: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -266,7 +301,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#007AFF",
     marginTop: 4,
   },
-
   content: { flex: 1, padding: 16 },
   description: { fontSize: 14, color: "#333", lineHeight: 20 },
   galleryImage: {
@@ -277,4 +311,3 @@ const styles = StyleSheet.create({
   },
   placeholder: { fontSize: 14, color: "#666" },
 });
-
