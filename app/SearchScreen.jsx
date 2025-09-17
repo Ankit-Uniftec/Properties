@@ -49,10 +49,8 @@ export default function SearchScreen() {
           .map((d) => ({ id: d.id, ...d.data() }))
           .filter((p) => !p.status); // ✅ remove properties with status
 
-        
-
         setProperties(docs);
-        setFiltered(docs); // temporary until filter applies
+        setFiltered(docs); // default
       } catch (err) {
         console.error("Error fetching properties:", err);
       }
@@ -64,47 +62,96 @@ export default function SearchScreen() {
   useEffect(() => {
     let data = [...properties];
 
-    // search by title or location
     if (search.trim()) {
       const term = search.toLowerCase();
       data = data.filter((p) => {
         const title = String(p.title || "").toLowerCase();
-        const location = String(p.location || "").toLowerCase();
-        return title.includes(term) || location.includes(term);
+
+        // handle location object or string
+        let locationText = "";
+        if (typeof p.location === "string") {
+          locationText = p.location.toLowerCase();
+        } else if (typeof p.location === "object") {
+          locationText = [
+            p.location.address,
+            p.location.city,
+            p.location.state,
+            p.location.pincode,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+        }
+
+        return title.includes(term) || locationText.includes(term);
       });
     } else if (userCity) {
-      // by default, filter by user city
-      data = data.filter((p) =>
-        String(p.location || "").toLowerCase().includes(userCity.toLowerCase())
-      );
+      data = data.filter((p) => {
+        let locationText = "";
+        if (typeof p.location === "string") {
+          locationText = p.location.toLowerCase();
+        } else if (typeof p.location === "object") {
+          locationText = [
+            p.location.address,
+            p.location.city,
+            p.location.state,
+            p.location.pincode,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+        }
+        return locationText.includes(userCity.toLowerCase());
+      });
     }
 
     setFiltered(data);
   }, [search, properties, userCity]);
 
   // 🔹 Render card
-  const renderCard = ({ item }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() =>
-        router.push({
-          pathname: "/PropertyDetailScreen",
-          params: { id: item.id },
-        })
+  const renderCard = ({ item }) => {
+    // ✅ handle nested location
+    let locationText = "Unknown location";
+    if (item.location) {
+      if (typeof item.location === "string") {
+        locationText = item.location;
+      } else if (typeof item.location === "object") {
+        locationText = [
+          item.location.address,
+          item.location.city,
+          item.location.state,
+          item.location.pincode,
+        ]
+          .filter(Boolean)
+          .join(", ");
       }
-    >
-      <Image
-        source={{ uri: item.thumbnailURL || "https://via.placeholder.com/150" }}
-        style={styles.cardImage}
-      />
-      <Text style={styles.cardTitle}>{item.title || "Untitled"}</Text>
-      <Text style={styles.cardSubtitle}>
-        <Ionicons name="location-outline" size={12} color="black" />{" "}
-        {item.location || "Unknown location"}
-      </Text>
-      
-    </TouchableOpacity>
-  );
+    }
+
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() =>
+          router.push({
+            pathname: "/PropertyDetailScreen",
+            params: { id: item.id },
+          })
+        }
+      >
+        <Image
+          source={{ uri: item.thumbnailURL || "https://via.placeholder.com/150" }}
+          style={styles.cardImage}
+        />
+        <Text style={styles.cardTitle}>{item.title || "Untitled"}</Text>
+
+        <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+          <Ionicons name="location-outline" size={12} color="black" />
+          <Text style={styles.cardSubtitle} numberOfLines={1}>
+            {" "}{locationText}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -113,24 +160,22 @@ export default function SearchScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        
       </View>
 
       {/* 🔹 Search input */}
       <View style={styles.searchBar}>
         <Ionicons
-              name="search-outline"
-              size={18}
-              color="#888"
-              style={{ marginRight: 6 }}
-            />
+          name="search-outline"
+          size={18}
+          color="#888"
+          style={{ marginRight: 6 }}
+        />
         <TextInput
           style={styles.searchInput}
           placeholder="Search by title or location"
           value={search}
           onChangeText={setSearch}
         />
-        
       </View>
 
       {/* 🔹 Results in 2-column grid */}
@@ -138,7 +183,7 @@ export default function SearchScreen() {
         data={filtered}
         renderItem={renderCard}
         keyExtractor={(item) => item.id}
-        numColumns={2} // ✅ 2 cards per row
+        numColumns={2}
         columnWrapperStyle={{ justifyContent: "space-between" }}
         contentContainerStyle={{ paddingBottom: 50 }}
         ListEmptyComponent={
@@ -152,12 +197,13 @@ export default function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: "#fff", paddingHorizontal: 16},
-  header: { paddingTop: 16,
+  container: { flex: 1, backgroundColor: "#fff", paddingHorizontal: 16 },
+  header: {
+    paddingTop: 16,
     marginTop: 25,
     flexDirection: "row",
-    alignItems: "center",},
-  
+    alignItems: "center",
+  },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -171,13 +217,13 @@ const styles = StyleSheet.create({
     padding: 6,
     borderRadius: 20,
   },
-  searchInput: { flex: 1, paddingVertical: 8  },
+  searchInput: { flex: 1, paddingVertical: 8 },
   card: {
     backgroundColor: "#fff",
     borderRadius: 12,
     elevation: 2,
     marginBottom: 12,
-    flex: 0.48, // ✅ 2 cards per row with spacing
+    flex: 0.48, // 2 cards per row
     padding: 10,
   },
   cardImage: { width: "100%", height: 120, borderRadius: 10 },

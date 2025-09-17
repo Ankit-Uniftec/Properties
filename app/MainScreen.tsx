@@ -8,7 +8,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 
 // 🔹 Firebase imports
@@ -22,6 +22,10 @@ export default function MainScreen() {
   type Property = {
     id: string;
     status?: string;
+    title?: string;
+    thumbnailURL?: string;
+    location?: { address?: string; city?: string; state?: string; pincode?: string };
+    category?: string;
     [key: string]: any;
   };
   const [properties, setProperties] = useState<Property[]>([]);
@@ -69,11 +73,11 @@ export default function MainScreen() {
     selectedCategory === "All"
       ? properties
       : properties.filter(
-        (p) => p.category?.toLowerCase() === selectedCategory.toLowerCase()
-      );
+          (p) => p.category?.toLowerCase() === selectedCategory.toLowerCase()
+        );
 
-  // ✅ Card Renderer with Navigation
-  const renderCard = (item: any) => (
+  // ✅ Card Renderer with Navigation (only thumbnail + title + address)
+  const renderCard = (item: Property) => (
     <TouchableOpacity
       style={styles.card}
       onPress={() =>
@@ -83,11 +87,13 @@ export default function MainScreen() {
         })
       }
     >
-      <Image source={{ uri: item.thumbnailURL }} style={styles.cardImage} />
+      {item.thumbnailURL && (
+        <Image source={{ uri: item.thumbnailURL }} style={styles.cardImage} />
+      )}
       <Text style={styles.cardTitle}>{item.title}</Text>
-      <Text style={styles.cardTitle}>
-        <Ionicons name="location-outline" size={10} color="black" />{" "}
-        {item.location}
+      <Text style={styles.cardLocation}>
+        <Ionicons name="location-outline" size={12} color="gray" />{" "}
+        {item.location?.address || "N/A"}
       </Text>
     </TouchableOpacity>
   );
@@ -99,9 +105,7 @@ export default function MainScreen() {
       keyExtractor={(item) => item.id}
       numColumns={selectedCategory === "All" ? 1 : 2}
       renderItem={
-        selectedCategory === "All"
-          ? null
-          : ({ item }) => renderCard(item)
+        selectedCategory === "All" ? null : ({ item }) => renderCard(item)
       }
       ListHeaderComponent={
         <View style={styles.container}>
@@ -148,12 +152,9 @@ export default function MainScreen() {
               style={{ marginRight: 6 }}
             />
             <Text style={styles.searchInput}>Search here</Text>
-            
           </TouchableOpacity>
 
-
-
-          {/* ---- Carousel (only properties without status) ---- */}
+          {/* ---- Carousel ---- */}
           <ScrollView
             horizontal
             pagingEnabled
@@ -191,7 +192,7 @@ export default function MainScreen() {
                   style={[
                     styles.categoryBtn,
                     selectedCategory.toLowerCase() === cat.toLowerCase() &&
-                    styles.categoryActive,
+                      styles.categoryActive,
                   ]}
                   onPress={() => setSelectedCategory(cat)}
                 >
@@ -199,7 +200,7 @@ export default function MainScreen() {
                     style={[
                       styles.categoryText,
                       selectedCategory.toLowerCase() === cat.toLowerCase() &&
-                      styles.categoryTextActive,
+                        styles.categoryTextActive,
                     ]}
                   >
                     {cat}
@@ -313,4 +314,5 @@ const styles = StyleSheet.create({
   },
   cardImage: { width: "100%", height: 90, borderRadius: 8, marginBottom: 6 },
   cardTitle: { fontSize: 13, fontWeight: "500" },
+  cardLocation: { fontSize: 12, color: "gray", marginTop: 2 },
 });

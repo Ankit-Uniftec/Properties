@@ -38,6 +38,12 @@ export default function ExploreScreen() {
     setLikesMap((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  const formatLocation = (loc) => {
+    if (!loc) return "Location not available";
+    if (typeof loc === "string") return loc; // in case some docs have string location
+    return `${loc.address || ""}`;
+  };
+
   const CategoryChips = () => (
     <ScrollView
       horizontal
@@ -83,6 +89,9 @@ export default function ExploreScreen() {
         <Text style={styles.featureTitle} numberOfLines={1}>
           {item.title}
         </Text>
+        <Text style={styles.trendingLocation} numberOfLines={1}>
+          {formatLocation(item.location)}
+        </Text>
       </View>
       <TouchableOpacity
         style={styles.featureHeart}
@@ -98,38 +107,39 @@ export default function ExploreScreen() {
   );
 
   const renderTrendingItem = ({ item }) => (
-  <TouchableOpacity
-    style={styles.trendingCard}
-    onPress={() =>
-      router.push({
-        pathname: "/PropertyDetailScreen",
-        params: { id: item.id },
-      })
-    }
-  >
-    <Image source={{ uri: item.thumbnailURL }} style={styles.trendingImage} />
-    <View style={styles.trendingInfo}>
-      <Text style={styles.trendingCategory}>
-        {item.category || "Apartment"}
-      </Text>
-      <Text style={styles.trendingTitle} numberOfLines={1}>
-        {item.title}
-      </Text>
-      <Text style={styles.trendingLocation}>{item.location}</Text>
-    </View>
     <TouchableOpacity
-      style={styles.trendingHeart}
-      onPress={() => toggleLike(item.id)}
+      style={styles.trendingCard}
+      onPress={() =>
+        router.push({
+          pathname: "/PropertyDetailScreen",
+          params: { id: item.id },
+        })
+      }
     >
-      <Ionicons
-        name={likesMap[item.id] ? "heart" : "heart-outline"}
-        size={20}
-        color={likesMap[item.id] ? "#FF4D6D" : "#E76E9A"}
-      />
+      <Image source={{ uri: item.thumbnailURL }} style={styles.trendingImage} />
+      <View style={styles.trendingInfo}>
+        <Text style={styles.trendingCategory}>
+          {item.category || "Apartment"}
+        </Text>
+        <Text style={styles.trendingTitle} numberOfLines={1}>
+          {item.title}
+        </Text>
+        <Text style={styles.trendingLocation} numberOfLines={1}>
+          {formatLocation(item.location)}
+        </Text>
+      </View>
+      <TouchableOpacity
+        style={styles.trendingHeart}
+        onPress={() => toggleLike(item.id)}
+      >
+        <Ionicons
+          name={likesMap[item.id] ? "heart" : "heart-outline"}
+          size={20}
+          color={likesMap[item.id] ? "#FF4D6D" : "#E76E9A"}
+        />
+      </TouchableOpacity>
     </TouchableOpacity>
-  </TouchableOpacity>
-);
-
+  );
 
   return (
     <View style={styles.container}>
@@ -137,7 +147,10 @@ export default function ExploreScreen() {
       <View style={styles.staticSection}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.push("/MainScreen")} style={styles.backBtn}>
+          <TouchableOpacity
+            onPress={() => router.push("/MainScreen")}
+            style={styles.backBtn}
+          >
             <Ionicons name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Explore</Text>

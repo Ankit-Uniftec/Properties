@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,13 +11,13 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { db } from "../firebase";
 
 export default function PropertyDetailScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams();   // ✅ now we get only id
+  const { id } = useLocalSearchParams(); // ✅ get only id
 
   const [prop, setProp] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -28,7 +28,7 @@ export default function PropertyDetailScreen() {
   useEffect(() => {
     const fetchProperty = async () => {
       try {
-        const docRef = doc(db, "properties", id);
+        const docRef = doc(db, "properties", String(id));
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           setProp({ id: docSnap.id, ...docSnap.data() });
@@ -42,25 +42,7 @@ export default function PropertyDetailScreen() {
     if (id) fetchProperty();
   }, [id]);
 
-  // ✅ Check registration
-  useEffect(() => {
-    if (!prop) return;
-    const checkRegistration = async () => {
-      try {
-        const q = query(
-          collection(db, "properties"),
-          where("originalPropertyId", "==", prop.id)
-        );
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          setIsRegistered(true);
-        }
-      } catch (err) {
-        console.error("Error checking registration:", err);
-      }
-    };
-    checkRegistration();
-  }, [prop]);
+  
 
   if (loading) {
     return (
@@ -81,8 +63,12 @@ export default function PropertyDetailScreen() {
   return (
     <View style={styles.container}>
       {/* ---- Main Image ---- */}
-      {prop.thumbnailURL && (
+      {prop.thumbnailURL ? (
         <Image source={{ uri: prop.thumbnailURL }} style={styles.mainImage} />
+      ) : (
+        <View style={[styles.mainImage, { justifyContent: "center", alignItems: "center" }]}>
+          <Text style={{ color: "#999" }}>No Image Available</Text>
+        </View>
       )}
 
       {/* ---- Overlay: Back ---- */}
@@ -107,41 +93,40 @@ export default function PropertyDetailScreen() {
           )}
           {prop.type && (
             <View style={[styles.tag, { backgroundColor: "#EAF4FF" }]}>
-              <Text style={[styles.tagText, { color: "#007AFF" }]}>
-                {prop.type}
-              </Text>
+              <Text style={[styles.tagText, { color: "#007AFF" }]}>{prop.type}</Text>
             </View>
           )}
         </View>
       </View>
 
       {/* ---- Title + Location ---- */}
-      <Text style={styles.title}>{prop.title}</Text>
-      <View style={styles.locationRow}>
-        <Ionicons name="location-outline" size={16} color="#007AFF" />
-        <Text style={styles.location}>{prop.location}</Text>
-      </View>
+      {/* ---- Title + Location ---- */}
+<Text style={styles.title}>{prop.title || "Untitled Property"}</Text>
+<View style={styles.locationRow}>
+  <Ionicons name="location-outline" size={16} color="#007AFF" />
+  <Text style={styles.location}>
+    {prop.location
+      ? `${prop.location.address || ""}`
+      : "Location not available"}
+  </Text>
+</View>
+
 
       {/* ---- Buttons Row ---- */}
       <View style={styles.btnRow}>
-        {isRegistered ? (
-          <View style={[styles.blueBtn, { backgroundColor: "#ccc" }]}>
-            <Text style={styles.btnText}>Registered</Text>
-          </View>
-        ) : (
+    
           <TouchableOpacity
             style={styles.blueBtn}
             onPress={() =>
               router.push({
                 pathname: "/RegisterProperty",
-                params: { id: prop.id},
-                
+                params: { id: prop.id },
               })
             }
           >
             <Text style={styles.btnText}>Register this property</Text>
           </TouchableOpacity>
-        )}
+        
 
         <TouchableOpacity style={styles.greenBtn}>
           <Text style={styles.btnText}>Interested in buying?</Text>
@@ -154,19 +139,8 @@ export default function PropertyDetailScreen() {
       {/* ---- Tabs ---- */}
       <View style={styles.tabRow}>
         {["Description", "Gallery", "Reviews", "Explore"].map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            onPress={() => setActiveTab(tab)}
-            style={styles.tab}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === tab && styles.activeTabText,
-              ]}
-            >
-              {tab}
-            </Text>
+          <TouchableOpacity key={tab} onPress={() => setActiveTab(tab)} style={styles.tab}>
+            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>{tab}</Text>
             {activeTab === tab && <View style={styles.tabIndicator} />}
           </TouchableOpacity>
         ))}
@@ -176,7 +150,9 @@ export default function PropertyDetailScreen() {
       <View style={styles.content}>
         {activeTab === "Description" && (
           <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-            <Text style={styles.description}>{prop.description}</Text>
+            <Text style={styles.description}>
+              {prop.description || "No description available."}
+            </Text>
           </ScrollView>
         )}
 
@@ -187,9 +163,8 @@ export default function PropertyDetailScreen() {
             numColumns={2}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 20 }}
-            renderItem={({ item }) => (
-              <Image source={{ uri: item }} style={styles.galleryImage} />
-            )}
+            renderItem={({ item }) => <Image source={{ uri: item }} style={styles.galleryImage} />}
+            ListEmptyComponent={<Text style={styles.placeholder}>No gallery images.</Text>}
           />
         )}
 
@@ -251,19 +226,9 @@ const styles = StyleSheet.create({
   },
   tagText: { fontSize: 12, fontWeight: "600", color: "#FF8A00" },
   title: { fontSize: 20, fontWeight: "700", marginHorizontal: 16, marginTop: 12 },
-  locationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginHorizontal: 16,
-    marginTop: 4,
-  },
+  locationRow: { flexDirection: "row", alignItems: "center", marginHorizontal: 16, marginTop: 4 },
   location: { fontSize: 14, color: "#555", marginLeft: 4 },
-  btnRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginHorizontal: 16,
-    marginTop: 12,
-  },
+  btnRow: { flexDirection: "row", alignItems: "center", marginHorizontal: 16, marginTop: 12 },
   blueBtn: {
     backgroundColor: "#007AFF",
     paddingHorizontal: 10,
@@ -279,12 +244,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   btnText: { color: "#fff", fontSize: 12, fontWeight: "600" },
-  likeBtn: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    padding: 8,
-    borderRadius: 8,
-  },
+  likeBtn: { borderWidth: 1, borderColor: "#ddd", padding: 8, borderRadius: 8 },
   tabRow: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -295,19 +255,9 @@ const styles = StyleSheet.create({
   tab: { alignItems: "center", paddingBottom: 8 },
   tabText: { fontSize: 14, color: "#777" },
   activeTabText: { color: "#007AFF", fontWeight: "600" },
-  tabIndicator: {
-    height: 2,
-    width: "100%",
-    backgroundColor: "#007AFF",
-    marginTop: 4,
-  },
+  tabIndicator: { height: 2, width: "100%", backgroundColor: "#007AFF", marginTop: 4 },
   content: { flex: 1, padding: 16 },
   description: { fontSize: 14, color: "#333", lineHeight: 20 },
-  galleryImage: {
-    width: "48%",
-    height: 120,
-    borderRadius: 8,
-    margin: "1%",
-  },
+  galleryImage: { width: "48%", height: 120, borderRadius: 8, margin: "1%" },
   placeholder: { fontSize: 14, color: "#666" },
 });
