@@ -16,11 +16,12 @@ type Property = {
   id: string;
   thumbnailURL: string;
   title: string;
-  location: string;
+  address: string;
+  faddress: string,
   rate: string;
   type: string;
   description: string;
-  otherPhotoURLs: string[]; // or string if you saved single URL
+  otherPhotoURLs: string[];
 };
 
 export default function PropertiesScreen() {
@@ -33,18 +34,19 @@ export default function PropertiesScreen() {
       const user = auth.currentUser;
       if (!user) return;
 
-      // Fetch your properties
+      {/*Fetch your properties*/ }
       const q1 = query(
-        collection(db, "properties"),
+        collection(db, "registeredFlats"),
         where("status", "==", "approved"),
         where("ownerId", "==", user.uid)
       );
+      ;
       const yourSnap = await getDocs(q1);
       const yourProps: any[] = [];
       yourSnap.forEach((doc) => yourProps.push({ id: doc.id, ...doc.data() }));
       setYourProperties(yourProps);
 
-      // Fetch shared properties
+      {/*Fetch shared properties */ }
       const q2 = query(
         collection(db, "properties"),
         where("status", "==", "approved"),
@@ -64,12 +66,7 @@ export default function PropertiesScreen() {
   const renderPropertyCard = (item: Property) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() =>
-        router.push({
-          pathname: "/PropertyDetailScreen",
-          params: { id:item.id },
-        })
-      }   
+
     >
       {/* Thumbnail */}
       {item.thumbnailURL ? (
@@ -85,11 +82,14 @@ export default function PropertiesScreen() {
         <Text style={styles.title} numberOfLines={1}>
           {item.title}
         </Text>
+        <Text style={styles.adress} numberOfLines={1}>
+          {item.faddress}
+        </Text>
 
         <View style={styles.locationRow}>
           <Ionicons name="location-outline" size={14} color="#007AFF" />
           <Text style={styles.location} numberOfLines={1}>
-            {item.location}
+            {item.address}
           </Text>
         </View>
 
@@ -253,9 +253,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
   },
-  title: { fontSize: 16, fontWeight: "600", marginBottom: 4 },
+  title: { fontSize: 13, fontWeight: "600", marginBottom: 4 },
+  adress: { fontSize: 16, fontWeight: "600", marginBottom: 4 },
   locationRow: { flexDirection: "row", alignItems: "center" },
-  location: { fontSize: 13, color: "#555", marginLeft: 4 },
+  location: { fontSize: 11, color: "#555", marginLeft: 4 },
   tagRow: { flexDirection: "row", marginTop: 6 },
   tag: {
     backgroundColor: "#FFF4E5",

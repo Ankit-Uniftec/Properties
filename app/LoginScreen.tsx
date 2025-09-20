@@ -130,7 +130,7 @@ export default function LoginScreen({ onLogin }: { onLogin: () => void }) {
             />
           </TouchableOpacity> */}
           <TouchableOpacity style={styles.socialButton}>
-            <Ionicons name="logo-google" size={30}  />
+            <Ionicons name="logo-google" size={30} />
 
           </TouchableOpacity>
           <TouchableOpacity style={styles.socialButton}>
@@ -160,13 +160,13 @@ const styles = StyleSheet.create({
     width: "100%",
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    overflow: "hidden", 
+    overflow: "hidden",
     height: windowHeight * 0.4, // 40% of screen height
   },
   gradient: {
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    
+
     flex: 1,
     justifyContent: "flex-end", // optional (pushes content to bottom)
   },
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 20,
     marginBottom: 24,
-    
+
     textAlign: "center",
   },
   inputBox: { marginBottom: 16 },

@@ -73,8 +73,8 @@ export default function MainScreen() {
     selectedCategory === "All"
       ? properties
       : properties.filter(
-          (p) => p.category?.toLowerCase() === selectedCategory.toLowerCase()
-        );
+        (p) => p.category?.toLowerCase() === selectedCategory.toLowerCase()
+      );
 
   // ✅ Card Renderer with Navigation (only thumbnail + title + address)
   const renderCard = (item: Property) => (
@@ -192,7 +192,7 @@ export default function MainScreen() {
                   style={[
                     styles.categoryBtn,
                     selectedCategory.toLowerCase() === cat.toLowerCase() &&
-                      styles.categoryActive,
+                    styles.categoryActive,
                   ]}
                   onPress={() => setSelectedCategory(cat)}
                 >
@@ -200,7 +200,7 @@ export default function MainScreen() {
                     style={[
                       styles.categoryText,
                       selectedCategory.toLowerCase() === cat.toLowerCase() &&
-                        styles.categoryTextActive,
+                      styles.categoryTextActive,
                     ]}
                   >
                     {cat}

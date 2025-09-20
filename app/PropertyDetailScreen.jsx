@@ -42,7 +42,7 @@ export default function PropertyDetailScreen() {
     if (id) fetchProperty();
   }, [id]);
 
-  
+
 
   if (loading) {
     return (
@@ -101,32 +101,32 @@ export default function PropertyDetailScreen() {
 
       {/* ---- Title + Location ---- */}
       {/* ---- Title + Location ---- */}
-<Text style={styles.title}>{prop.title || "Untitled Property"}</Text>
-<View style={styles.locationRow}>
-  <Ionicons name="location-outline" size={16} color="#007AFF" />
-  <Text style={styles.location}>
-    {prop.location
-      ? `${prop.location.address || ""}`
-      : "Location not available"}
-  </Text>
-</View>
+      <Text style={styles.title}>{prop.title || "Untitled Property"}</Text>
+      <View style={styles.locationRow}>
+        <Ionicons name="location-outline" size={16} color="#007AFF" />
+        <Text style={styles.location}>
+          {prop.location
+            ? `${prop.location.address || ""}`
+            : "Location not available"}
+        </Text>
+      </View>
 
 
       {/* ---- Buttons Row ---- */}
       <View style={styles.btnRow}>
-    
-          <TouchableOpacity
-            style={styles.blueBtn}
-            onPress={() =>
-              router.push({
-                pathname: "/RegisterProperty",
-                params: { id: prop.id },
-              })
-            }
-          >
-            <Text style={styles.btnText}>Register this property</Text>
-          </TouchableOpacity>
-        
+
+        <TouchableOpacity
+          style={styles.blueBtn}
+          onPress={() =>
+            router.push({
+              pathname: "/RegisterProperty",
+              params: { id: prop.id },
+            })
+          }
+        >
+          <Text style={styles.btnText}>Register this property</Text>
+        </TouchableOpacity>
+
 
         <TouchableOpacity style={styles.greenBtn}>
           <Text style={styles.btnText}>Interested in buying?</Text>

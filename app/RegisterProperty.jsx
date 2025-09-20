@@ -19,18 +19,19 @@ import { auth, db, storage } from "../firebase";
 
 export default function RegisterProperty() {
   const router = useRouter();
-  const { id } = useLocalSearchParams(); // ✅ we now get only id
+  const { id, selectedFlat } = useLocalSearchParams();
   const [prop, setProp] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [flatData, setFlatData] = useState(null);
 
-  // form states
+
   const [selectedType, setSelectedType] = useState("Farmhouse");
   const [multipleOwners, setMultipleOwners] = useState(true);
   const [ownerName, setOwnerName] = useState("");
   const [aadharNumber, setAadharNumber] = useState("");
   const [propertyAddress, setPropertyAddress] = useState("");
 
-  // document states
+
   const [electricityBill, setElectricityBill] = useState(null);
   const [registryCopy, setRegistryCopy] = useState(null);
   const [otherDocs, setOtherDocs] = useState(null);
@@ -42,8 +43,18 @@ export default function RegisterProperty() {
     { label: "Floor", icon: "layers" },
     { label: "Office", icon: "briefcase" },
   ];
+  useEffect(() => {
+    if (selectedFlat) {
+      try {
+        setFlatData(JSON.parse(selectedFlat));
+        setPropertyAddress(JSON.parse(selectedFlat).address);
+      } catch (err) {
+        console.log("Error parsing flat:", err);
+      }
+    }
+  }, [selectedFlat]);
 
-  // ✅ Fetch property by ID
+
   useEffect(() => {
     const fetchProperty = async () => {
       try {
@@ -60,7 +71,7 @@ export default function RegisterProperty() {
     fetchProperty();
   }, [id]);
 
-  // pick document
+
   const pickDocument = async (setFile) => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
@@ -77,7 +88,7 @@ export default function RegisterProperty() {
     }
   };
 
-  // upload file to firebase storage
+
   const uploadFile = async (file, folder) => {
     if (!file) return null;
     try {
@@ -92,51 +103,61 @@ export default function RegisterProperty() {
     }
   };
 
-  // handle submit
+
   const handleSubmit = async () => {
     if (!ownerName || !aadharNumber || !propertyAddress) {
       Alert.alert("Missing Fields", "Please fill all required fields.");
       return;
     }
+
     try {
       setLoading(true);
 
-      // upload docs
+      // Upload documents
       const electricityBillURL = await uploadFile(electricityBill, "documents");
       const registryCopyURL = await uploadFile(registryCopy, "documents");
       const otherDocsURL = await uploadFile(otherDocs, "documents");
 
-      // ✅ decide thumbnail: use prop thumbnail
-      const thumbnailURL = prop?.thumbnailURL || null;
+      // Resolve thumbnail URL from Firebase Storage if needed
+      let resolvedThumbnailURL = flatData?.thumbnailURL || null;
+      if (resolvedThumbnailURL && !resolvedThumbnailURL.startsWith("https://")) {
+        try {
+          resolvedThumbnailURL = await getDownloadURL(ref(storage, resolvedThumbnailURL));
+        } catch (err) {
+          console.log("Failed to get thumbnail URL:", err);
+          resolvedThumbnailURL = null;
+        }
+      }
 
-      // save to firestore
       const user = auth.currentUser;
-      await addDoc(collection(db, "properties"), {
-        originalPropertyId: prop?.id || null,
 
-        // from PropertyDetailScreen
-        title: prop?.title || "",
-        thumbnailURL,
-        location: prop?.location || "",
-        rate: prop?.rate || "",
-        type: prop?.type || selectedType,
-        description: prop?.description || "",
-        otherPhotoURLs: prop?.otherPhotoURLs || [],
+      await addDoc(collection(db, "registeredFlats"), {
+        propertyId: flatData?.propertyId || null,
+        flatName: flatData?.flatName,
+        floorName: flatData?.floorName,
+        towerName: flatData?.towerName,
+        faddress: flatData?.faddress ||
 
-        // from RegisterProperty form
-        address: propertyAddress,
-        multipleOwners,
-        ownerName,
+          ownerName,
         aadharNumber,
+        multipleOwners,
+        ownerId: user ? user.uid : null,
+
         documents: {
           electricityBill: electricityBillURL,
           registryCopy: registryCopyURL,
           otherDocs: otherDocsURL,
         },
-        ownerId: user ? user.uid : null,
 
+        address: propertyAddress,
         status: "pending",
         createdAt: serverTimestamp(),
+
+        // Use flatData for property fields
+        title: flatData?.title || "",
+        thumbnailURL: resolvedThumbnailURL || "",
+        rate: flatData?.rate || 0,
+        type: selectedType,
       });
 
       setLoading(false);
@@ -148,6 +169,7 @@ export default function RegisterProperty() {
       Alert.alert("Error", "Failed to save property.");
     }
   };
+
 
   return (
     <View style={styles.container}>
@@ -195,12 +217,20 @@ export default function RegisterProperty() {
           </View>
 
           <Text style={styles.label}>Property Address</Text>
-          <TextInput
-            placeholder="Search your property address"
-            style={styles.input}
-            value={propertyAddress}
-            onChangeText={setPropertyAddress}
-          />
+          <TouchableOpacity
+            style={[styles.input, { justifyContent: "center" }]}
+            onPress={() =>
+              router.push({
+                pathname: "/TowerSelectionScreen",
+                params: { propertyId: prop?.id },
+              })
+            }
+          >
+            <Text style={{ color: propertyAddress ? "#000" : "#aaa" }}>
+              {propertyAddress || "Select your property (Tower / Floor / Flat)"}
+            </Text>
+          </TouchableOpacity>
+
 
           <Text style={styles.label}>Upload Documents</Text>
           <View style={styles.docRow}>

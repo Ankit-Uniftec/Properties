@@ -4,14 +4,14 @@ import React from "react";
 import { Button, StyleSheet, Text, View } from "react-native";
 export default function MenuScreen({ onLogout }: { onLogout: () => void }) {
   const handleLogout = async () => {
-      const auth = getAuth(app);
-      await signOut(auth);
-      onLogout();
-    };
+    const auth = getAuth(app);
+    await signOut(auth);
+    onLogout();
+  };
   return (
     <View style={styles.container}>
       <Text style={styles.text}>This is Menu Screen</Text>
-      <Button title="Logout" onPress={handleLogout} /> 
+      <Button title="Logout" onPress={handleLogout} />
     </View>
   );
 }
