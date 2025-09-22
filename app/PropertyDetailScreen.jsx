@@ -47,7 +47,7 @@ export default function PropertyDetailScreen() {
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color="#3572EF" />
       </View>
     );
   }
@@ -103,7 +103,7 @@ export default function PropertyDetailScreen() {
       {/* ---- Title + Location ---- */}
       <Text style={styles.title}>{prop.title || "Untitled Property"}</Text>
       <View style={styles.locationRow}>
-        <Ionicons name="location-outline" size={16} color="#007AFF" />
+        <Ionicons name="location-outline" size={16}  />
         <Text style={styles.location}>
           {prop.location
             ? `${prop.location.address || ""}`
@@ -218,26 +218,26 @@ const styles = StyleSheet.create({
   ratingText: { fontSize: 12, fontWeight: "600", marginLeft: 4 },
   tagRow: { flexDirection: "row", alignItems: "center" },
   tag: {
-    backgroundColor: "#FFF4E5",
+    backgroundColor: "#d3dff859",
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 6,
     marginLeft: 6,
   },
-  tagText: { fontSize: 12, fontWeight: "600", color: "#FF8A00" },
+  tagText: { fontSize: 10, fontWeight: "600", color: "#3572EF" },
   title: { fontSize: 20, fontWeight: "700", marginHorizontal: 16, marginTop: 12 },
   locationRow: { flexDirection: "row", alignItems: "center", marginHorizontal: 16, marginTop: 4 },
   location: { fontSize: 14, color: "#555", marginLeft: 4 },
   btnRow: { flexDirection: "row", alignItems: "center", marginHorizontal: 16, marginTop: 12 },
   blueBtn: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#3572EF",
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 8,
     marginRight: 6,
   },
   greenBtn: {
-    backgroundColor: "#34C759",
+    backgroundColor: "#09CA67",
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 8,
@@ -254,8 +254,8 @@ const styles = StyleSheet.create({
   },
   tab: { alignItems: "center", paddingBottom: 8 },
   tabText: { fontSize: 14, color: "#777" },
-  activeTabText: { color: "#007AFF", fontWeight: "600" },
-  tabIndicator: { height: 2, width: "100%", backgroundColor: "#007AFF", marginTop: 4 },
+  activeTabText: { color: "#3572EF", fontWeight: "600" },
+  tabIndicator: { height: 2, width: "100%", backgroundColor: "#3572EF", marginTop: 4 },
   content: { flex: 1, padding: 16 },
   description: { fontSize: 14, color: "#333", lineHeight: 20 },
   galleryImage: { width: "48%", height: 120, borderRadius: 8, margin: "1%" },

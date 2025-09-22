@@ -166,7 +166,8 @@ export default function FloorSelectionScreen() {
             rate: property?.rate,
             title: property?.title,
             registered: !!reg,
-            ownerName: reg?.ownerName || "Hidden",
+            // ownerName: reg?.ownerName || "Hidden",
+            ownerName:reg?.owners.map((item)=>{return item.name}) || "Hidden",
           };
 
           return (
@@ -192,11 +193,11 @@ export default function FloorSelectionScreen() {
               <View
                 style={[
                   styles.tag,
-                  { backgroundColor: item.registered ? "#3B82F6" : "#9CA3AF" },
+                  { backgroundColor: item.registered ? "#3572EF" : "#D3C948" },
                 ]}
               >
                 <Text style={styles.tagText}>
-                  {item.registered ? "Registered" : "Not Registered"}
+                  {item.registered ? "Verified" : "Not Verified"}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -209,7 +210,7 @@ export default function FloorSelectionScreen() {
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#3B82F6" />
+        <ActivityIndicator size="large" color="#3572EF" />
       </View>
     );
   }
@@ -298,12 +299,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 20,
-    color: "#007AFF",
+    color: "#3572EF",
   },
   floorBox: {
     padding: 15,
     borderWidth: 1,
-    borderColor: "#007AFF",
+    borderColor: "#3572EF",
     borderRadius: 8,
     marginVertical: 6,
   },
@@ -317,24 +318,24 @@ const styles = StyleSheet.create({
     elevation: 2,
     position: "relative",
   },
-  thumbnail: { width: 70, height: 70, borderRadius: 8, marginRight: 12 },
+  thumbnail: { width: 90, height: 90, borderRadius: 8, marginRight: 12 },
   info: { flex: 1 },
   projectTitle: {
-    fontSize: 13,
+    fontSize: 10,
     color: "#059669",
     fontWeight: "600",
     marginBottom: 2,
   },
-  flatTitle: { fontSize: 15, fontWeight: "600", marginBottom: 2 },
-  location: { fontSize: 13, color: "#666", marginBottom: 2 },
-  owner: { fontSize: 13, fontWeight: "500" },
+  flatTitle: { fontSize: 14, fontWeight: "600", marginBottom: 2 },
+  location: { fontSize: 10, color: "#666", marginBottom: 2 },
+  owner: { fontSize: 10, fontWeight: "500", color:"#3572EF" },
   tag: {
     position: "absolute",
     top: 10,
     right: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 8, 
+    paddingVertical: 2,
     borderRadius: 10,
   },
-  tagText: { color: "#fff", fontSize: 11, fontWeight: "600" },
+  tagText: { color: "#fff", fontSize: 10, fontWeight: "500" },
 });

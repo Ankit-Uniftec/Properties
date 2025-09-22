@@ -64,52 +64,50 @@ export default function PropertiesScreen() {
   const dataToShow = selectedTab === "your" ? yourProperties : sharedProperties;
 
   const renderPropertyCard = (item: Property) => (
-    <TouchableOpacity
-      style={styles.card}
-
-    >
-      {/* Thumbnail */}
-      {item.thumbnailURL ? (
-        <Image source={{ uri: item.thumbnailURL }} style={styles.thumbnail} />
-      ) : (
-        <View style={[styles.thumbnail, styles.thumbnailPlaceholder]}>
-          <Ionicons name="image-outline" size={32} color="#aaa" />
-        </View>
-      )}
-
-      {/* Info */}
-      <View style={styles.cardInfo}>
-        <Text style={styles.title} numberOfLines={1}>
-          {item.title}
-        </Text>
-        <Text style={styles.adress} numberOfLines={1}>
-          {item.faddress}
-        </Text>
-
-        <View style={styles.locationRow}>
-          <Ionicons name="location-outline" size={14} color="#007AFF" />
-          <Text style={styles.location} numberOfLines={1}>
-            {item.address}
-          </Text>
-        </View>
-
-        <View style={styles.tagRow}>
-          {item.rate && (
-            <View style={styles.tag}>
-              <Text style={styles.tagText}>{item.rate}</Text>
-            </View>
-          )}
-          {item.type && (
-            <View style={[styles.tag, { backgroundColor: "#EAF4FF" }]}>
-              <Text style={[styles.tagText, { color: "#007AFF" }]}>
-                {item.type}
-              </Text>
-            </View>
-          )}
-        </View>
+  <TouchableOpacity style={styles.card}>
+    {/* Type Tag at top-right */}
+    {item.type && (
+      <View style={styles.topRightTag}>
+        <Text style={styles.topRightTagText}>{item.type}</Text>
       </View>
-    </TouchableOpacity>
-  );
+    )}
+
+    {/* Thumbnail */}
+    {item.thumbnailURL ? (
+      <Image source={{ uri: item.thumbnailURL }} style={styles.thumbnail} />
+    ) : (
+      <View style={[styles.thumbnail, styles.thumbnailPlaceholder]}>
+        <Ionicons name="image-outline" size={32} color="#aaa" />
+      </View>
+    )}
+
+    {/* Info */}
+    <View style={styles.cardInfo}>
+      <Text style={styles.title} numberOfLines={1}>
+        {item.title}
+      </Text>
+      <Text style={styles.adress} numberOfLines={1}>
+        {item.faddress}
+      </Text>
+
+      <View style={styles.locationRow}>
+        <Ionicons name="location-outline" size={14} />
+        <Text style={styles.location} numberOfLines={1}>
+          {item.address}
+        </Text>
+      </View>
+
+      <View style={styles.tagRow}>
+        {item.rate && (
+          <View style={styles.tag}>
+            <Text style={styles.tagText}>Est. Value {item.rate}</Text>
+          </View>
+        )}
+      </View>
+    </View>
+  </TouchableOpacity>
+);
+
 
   return (
     <View style={{ flex: 1 }}>
@@ -253,17 +251,33 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
   },
-  title: { fontSize: 13, fontWeight: "600", marginBottom: 4 },
-  adress: { fontSize: 16, fontWeight: "600", marginBottom: 4 },
+  topRightTag: {
+  position: "absolute",
+  top: 10,
+  right: 10,
+  backgroundColor: "#3572EF",
+  paddingVertical: 2,
+  paddingHorizontal: 6,
+  borderRadius: 6,
+  zIndex: 10,
+},
+topRightTagText: {
+  fontSize: 10,
+  fontWeight: "600",
+  color: "white",
+},
+
+  title: { fontSize: 10, fontWeight: "600", marginBottom: 4,color: '#059669' },
+  adress: { fontSize: 14, fontWeight: "600", marginBottom: 4 },
   locationRow: { flexDirection: "row", alignItems: "center" },
-  location: { fontSize: 11, color: "#555", marginLeft: 4 },
+  location: { fontSize: 10, color: "#555", marginLeft: 4 },
   tagRow: { flexDirection: "row", marginTop: 6 },
   tag: {
-    backgroundColor: "#FFF4E5",
+    
     paddingVertical: 3,
     paddingHorizontal: 8,
     borderRadius: 6,
     marginRight: 6,
   },
-  tagText: { fontSize: 12, fontWeight: "600", color: "#FF8A00" },
+  tagText: { fontSize: 10, fontWeight: "600", color: "#3572EF" },
 });

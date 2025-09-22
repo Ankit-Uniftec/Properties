@@ -245,8 +245,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0F3F6",
     marginRight: 10,
   },
-  chipActive: { backgroundColor: "#007AFF" },
-  chipText: { fontSize: 13, color: "#333" },
+  chipActive: { backgroundColor: "#3572EF" },
+  chipText: { fontSize: 13, color: "#3572EF" },
   chipTextActive: { color: "#fff", fontWeight: "600" },
 
   sectionHeader: {
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   sectionTitle: { fontSize: 16, fontWeight: "700" },
-  seeAll: { fontSize: 13, color: "#007AFF" },
+  seeAll: { fontSize: 13, color: "#3572EF" },
 
   trendingCard: {
     flexDirection: "row",
@@ -272,9 +272,9 @@ const styles = StyleSheet.create({
   trendingImage: { width: 92, height: 70, borderRadius: 8, marginRight: 12 },
   trendingInfo: { flex: 1 },
   trendingCategory: { color: "#22C55E", fontSize: 12, marginBottom: 2 },
-  trendingTitle: { fontSize: 14, fontWeight: "600" },
+  trendingTitle: { fontSize: 13, fontWeight: "500" },
   trendingLocation: { fontSize: 12, color: "#888", marginTop: 2 },
-  trendingStatus: { marginTop: 8, color: "#007AFF", fontWeight: "600" },
+  trendingStatus: { marginTop: 8, color: "#3572EF", fontWeight: "600" },
   trendingHeart: {
     width: 44,
     height: 44,

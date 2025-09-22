@@ -290,8 +290,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#f0f0f0",
     marginRight: 8,
   },
-  categoryActive: { backgroundColor: "#007AFF" },
-  categoryText: { fontSize: 13, color: "#333" },
+  categoryActive: { backgroundColor: "#3572EF" },
+  categoryText: { fontSize: 13, color: "#3572EF" },
   categoryTextActive: { color: "#fff", fontWeight: "600" },
   section: { marginTop: 20 },
   sectionHeader: {
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   sectionTitle: { fontSize: 16, fontWeight: "600" },
-  seeAll: { fontSize: 13, color: "#007AFF" },
+  seeAll: { fontSize: 13, color: "#3572EF" },
   card: {
     width: 180,
     marginRight: 12,

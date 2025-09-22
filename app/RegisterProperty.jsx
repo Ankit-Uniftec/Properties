@@ -24,13 +24,12 @@ export default function RegisterProperty() {
   const [loading, setLoading] = useState(false);
   const [flatData, setFlatData] = useState(null);
 
-
-  const [selectedType, setSelectedType] = useState("Farmhouse");
-  const [multipleOwners, setMultipleOwners] = useState(true);
+  const [selectedType, setSelectedType] = useState(null);
+  const [multipleOwners, setMultipleOwners] = useState(false);
   const [ownerName, setOwnerName] = useState("");
   const [aadharNumber, setAadharNumber] = useState("");
-  const [propertyAddress, setPropertyAddress] = useState("");
-
+  const [owners, setOwners] = useState([]); // New state for multiple owners
+  const [propertyAddress, setPropertyAddress] = useState(""); 
 
   const [electricityBill, setElectricityBill] = useState(null);
   const [registryCopy, setRegistryCopy] = useState(null);
@@ -43,6 +42,7 @@ export default function RegisterProperty() {
     { label: "Floor", icon: "layers" },
     { label: "Office", icon: "briefcase" },
   ];
+
   useEffect(() => {
     if (selectedFlat) {
       try {
@@ -53,7 +53,6 @@ export default function RegisterProperty() {
       }
     }
   }, [selectedFlat]);
-
 
   useEffect(() => {
     const fetchProperty = async () => {
@@ -71,7 +70,6 @@ export default function RegisterProperty() {
     fetchProperty();
   }, [id]);
 
-
   const pickDocument = async (setFile) => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
@@ -88,7 +86,6 @@ export default function RegisterProperty() {
     }
   };
 
-
   const uploadFile = async (file, folder) => {
     if (!file) return null;
     try {
@@ -103,9 +100,20 @@ export default function RegisterProperty() {
     }
   };
 
+  // 🔹 Add Owner Function
+  const handleAddOwner = () => {
+    if (!ownerName || !aadharNumber) {
+      Alert.alert("Missing Fields", "Please enter both name and Aadhaar.");
+      return;
+    }
+
+    setOwners((prev) => [...prev, { name: ownerName, aadhar: aadharNumber }]);
+    setOwnerName("");
+    setAadharNumber("");
+  };
 
   const handleSubmit = async () => {
-    if (!ownerName || !aadharNumber || !propertyAddress) {
+    if (!propertyAddress || (!multipleOwners && !ownerName) || (multipleOwners && owners.length === 0)) {
       Alert.alert("Missing Fields", "Please fill all required fields.");
       return;
     }
@@ -118,14 +126,45 @@ export default function RegisterProperty() {
       const registryCopyURL = await uploadFile(registryCopy, "documents");
       const otherDocsURL = await uploadFile(otherDocs, "documents");
 
-      // Resolve thumbnail URL from Firebase Storage if needed
       let resolvedThumbnailURL = flatData?.thumbnailURL || null;
-      if (resolvedThumbnailURL && !resolvedThumbnailURL.startsWith("https://")) {
-        try {
-          resolvedThumbnailURL = await getDownloadURL(ref(storage, resolvedThumbnailURL));
-        } catch (err) {
-          console.log("Failed to get thumbnail URL:", err);
-          resolvedThumbnailURL = null;
+
+      if (resolvedThumbnailURL) {
+        if (resolvedThumbnailURL.startsWith("https://")) {
+          try {
+            if (resolvedThumbnailURL.includes("/o/")) {
+              const [prefix, rest] = resolvedThumbnailURL.split("/o/");
+              const qIdx = rest.indexOf("?");
+              const objectPath = qIdx >= 0 ? rest.slice(0, qIdx) : rest;
+              const query = qIdx >= 0 ? rest.slice(qIdx) : "";
+              let decodedObjectPath = objectPath;
+              try {
+                decodedObjectPath = decodeURIComponent(objectPath);
+              } catch (e) {}
+              const encodedObjectPath = encodeURIComponent(decodedObjectPath);
+              resolvedThumbnailURL = `${prefix}/o/${encodedObjectPath}${query}`;
+            }
+          } catch (err) {
+            console.log("Error re-encoding thumbnail URL:", err);
+          }
+        } else {
+          try {
+            resolvedThumbnailURL = await getDownloadURL(ref(storage, resolvedThumbnailURL));
+            if (resolvedThumbnailURL.includes("/o/")) {
+              const [prefix, rest] = resolvedThumbnailURL.split("/o/");
+              const qIdx = rest.indexOf("?");
+              const objectPath = qIdx >= 0 ? rest.slice(0, qIdx) : rest;
+              const query = qIdx >= 0 ? rest.slice(qIdx) : "";
+              let decodedObjectPath = objectPath;
+              try {
+                decodedObjectPath = decodeURIComponent(objectPath);
+              } catch (e) {}
+              const encodedObjectPath = encodeURIComponent(decodedObjectPath);
+              resolvedThumbnailURL = `${prefix}/o/${encodedObjectPath}${query}`;
+            }
+          } catch (err) {
+            console.log("Failed to get thumbnail URL from storage path:", err);
+            resolvedThumbnailURL = null;
+          }
         }
       }
 
@@ -136,11 +175,13 @@ export default function RegisterProperty() {
         flatName: flatData?.flatName,
         floorName: flatData?.floorName,
         towerName: flatData?.towerName,
-        faddress: flatData?.faddress ||
+        faddress: flatData?.faddress || null,
 
-          ownerName,
-        aadharNumber,
         multipleOwners,
+        owners: multipleOwners
+          ? owners
+          : [{ name: ownerName, aadhar: aadharNumber }],
+
         ownerId: user ? user.uid : null,
 
         documents: {
@@ -153,7 +194,6 @@ export default function RegisterProperty() {
         status: "pending",
         createdAt: serverTimestamp(),
 
-        // Use flatData for property fields
         title: flatData?.title || "",
         thumbnailURL: resolvedThumbnailURL || "",
         rate: flatData?.rate || 0,
@@ -170,7 +210,6 @@ export default function RegisterProperty() {
     }
   };
 
-
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -178,7 +217,7 @@ export default function RegisterProperty() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Register your property ownership</Text>
+        <Text style={styles.headerTitle}>Register your property {`\n`}ownership</Text>
       </View>
 
       <ScrollView
@@ -186,6 +225,7 @@ export default function RegisterProperty() {
         contentContainerStyle={{ paddingBottom: 30 }}
         showsVerticalScrollIndicator={false}
       >
+        {/* Property Details */}
         <Text style={styles.sectionTitle}>Property Details</Text>
         <View style={styles.card}>
           <Text style={styles.label}>Type of Property</Text>
@@ -193,22 +233,16 @@ export default function RegisterProperty() {
             {propertyTypes.map((type) => (
               <TouchableOpacity
                 key={type.label}
-                style={[
-                  styles.typeBox,
-                  selectedType === type.label && styles.typeBoxSelected,
-                ]}
+                style={[styles.typeBox, selectedType === type.label && styles.typeBoxSelected]}
                 onPress={() => setSelectedType(type.label)}
               >
                 <Ionicons
                   name={type.icon}
                   size={20}
-                  color={selectedType === type.label ? "#007AFF" : "#777"}
+                  color={selectedType === type.label ? "#3572EF" : "#777"}
                 />
                 <Text
-                  style={[
-                    styles.typeText,
-                    selectedType === type.label && styles.typeTextSelected,
-                  ]}
+                  style={[styles.typeText, selectedType === type.label && styles.typeTextSelected]}
                 >
                   {type.label}
                 </Text>
@@ -227,41 +261,25 @@ export default function RegisterProperty() {
             }
           >
             <Text style={{ color: propertyAddress ? "#000" : "#aaa" }}>
-              {propertyAddress || "Select your property (Tower / Floor / Flat)"}
+              {propertyAddress || "Click here to select your property"}
             </Text>
           </TouchableOpacity>
 
-
           <Text style={styles.label}>Upload Documents</Text>
           <View style={styles.docRow}>
-            <TouchableOpacity
-              style={styles.docBox}
-              onPress={() => pickDocument(setElectricityBill)}
-            >
-              <Ionicons name="add" size={24} color="#007AFF" />
-              <Text style={styles.docText}>
-                {electricityBill ? electricityBill.name : "Electricity Bill"}
-              </Text>
+            <TouchableOpacity style={styles.docBox} onPress={() => pickDocument(setElectricityBill)}>
+              <Ionicons name="add" size={24} color="#3572EF" />
+              <Text style={styles.docText}>{electricityBill ? electricityBill.name : "Electricity Bill"}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.docBox}
-              onPress={() => pickDocument(setRegistryCopy)}
-            >
-              <Ionicons name="add" size={24} color="#007AFF" />
-              <Text style={styles.docText}>
-                {registryCopy ? registryCopy.name : "Registry Copy"}
-              </Text>
+            <TouchableOpacity style={styles.docBox} onPress={() => pickDocument(setRegistryCopy)}>
+              <Ionicons name="add" size={24} color="#3572EF" />
+              <Text style={styles.docText}>{registryCopy ? registryCopy.name : "Registry Copy"}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.docBox}
-              onPress={() => pickDocument(setOtherDocs)}
-            >
-              <Ionicons name="add" size={24} color="#007AFF" />
-              <Text style={styles.docText}>
-                {otherDocs ? otherDocs.name : "Other Docs"}
-              </Text>
+            <TouchableOpacity style={styles.docBox} onPress={() => pickDocument(setOtherDocs)}>
+              <Ionicons name="add" size={24} color="#3572EF" />
+              <Text style={styles.docText}>{otherDocs ? otherDocs.name : "Other Docs"}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -273,15 +291,15 @@ export default function RegisterProperty() {
             <Text style={styles.label}>Multiple Owners</Text>
             <Switch
               value={multipleOwners}
-              onValueChange={setMultipleOwners}
-              trackColor={{ true: "#007AFF", false: "#ccc" }}
+              onValueChange={(val) => {
+                setMultipleOwners(val);
+                if (!val) setOwners([]);
+              }}
+              trackColor={{ true: "#3572EF", false: "#ccc" }}
             />
           </View>
 
           <Text style={styles.label}>Owner’s Name</Text>
-          <Text style={styles.helperText}>
-            (Must match the name on ownership documents)
-          </Text>
           <TextInput
             placeholder="Enter owner’s full name"
             style={styles.input}
@@ -291,13 +309,32 @@ export default function RegisterProperty() {
 
           <Text style={styles.label}>Owner’s Aadhar Number</Text>
           <TextInput
-            placeholder="Enter owner’s 12 digit aadhar number"
+            placeholder="Enter 12 digit aadhar number"
             style={styles.input}
             keyboardType="numeric"
             maxLength={12}
             value={aadharNumber}
             onChangeText={setAadharNumber}
           />
+
+          {multipleOwners && (
+            <TouchableOpacity
+              style={[styles.continueBtn, { marginTop: 6, backgroundColor: "#3572EF" }]}
+              onPress={handleAddOwner}
+            >
+              <Text style={styles.continueText}>+ Add Owner</Text>
+            </TouchableOpacity>
+          )}
+
+          {multipleOwners && owners.length > 0 && (
+            <View style={{ marginTop: 12 }}>
+              {owners.map((o, idx) => (
+                <Text key={idx} style={{ fontSize: 13, marginBottom: 4 }}>
+                  👤 {o.name} - {o.aadhar}
+                </Text>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* Continue Button */}
@@ -306,11 +343,7 @@ export default function RegisterProperty() {
           onPress={handleSubmit}
           disabled={loading}
         >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.continueText}>Continue</Text>
-          )}
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.continueText}>Continue</Text>}
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -323,8 +356,8 @@ const styles = StyleSheet.create({
   header: {
     padding: 16,
     marginTop: 25,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "column",
+    alignItems: "flex-start",
   },
   backBtn: {
     backgroundColor: "#f1f1f1",
@@ -332,16 +365,16 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: 28,
+    fontWeight: "600",
     marginLeft: 12,
-    color: "#007AFF",
+    color: "#3572EF",
   },
 
   sectionTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#007AFF",
+    color: "#3572EF",
     marginTop: 12,
     marginBottom: 6,
     marginHorizontal: 16,
@@ -377,11 +410,11 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   typeBoxSelected: {
-    borderColor: "#007AFF",
+    borderColor: "#3572EF",
     backgroundColor: "#EAF4FF",
   },
   typeText: { fontSize: 9, marginTop: 4, color: "#777" },
-  typeTextSelected: { color: "#007AFF", fontWeight: "600" },
+  typeTextSelected: { color: "#3572EF", fontWeight: "600" },
 
   input: {
     borderWidth: 1,
@@ -416,14 +449,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
-  helperText: {
-    fontSize: 11,
-    color: "#666",
-    marginBottom: 12,
-  },
-
   continueBtn: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#3572EF",
     marginHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 10,
