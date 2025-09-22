@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { useEffect, useState } from "react";
@@ -7,6 +8,7 @@ import {
   Image,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -17,10 +19,12 @@ export default function FloorSelectionScreen() {
   const router = useRouter();
 
   const [floors, setFloors] = useState([]);
+  const [filteredFloors, setFilteredFloors] = useState([]);
   const [expandedFloor, setExpandedFloor] = useState(null);
   const [property, setProperty] = useState(null);
   const [registeredFlats, setRegisteredFlats] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // helper: normalize flat names for comparison
   const normalize = (s) =>
@@ -57,16 +61,18 @@ export default function FloorSelectionScreen() {
             })),
           ];
           shiftedFloors = shiftedFloors.filter((f) => f.flats && f.flats.length > 0);
+
           setFloors(shiftedFloors);
+          setFilteredFloors(shiftedFloors); // ✅ show all initially
         } else {
           setFloors([]);
+          setFilteredFloors([]);
           setProperty(null);
         }
 
         // ✅ fetch all registeredFlats (no propertyId filter)
         const regsSnap = await getDocs(collection(db, "registeredFlats"));
         const regs = regsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        console.log("registeredFlats (raw):", regs);
         setRegisteredFlats(regs);
       } catch (err) {
         console.error("Error fetching floors or registeredFlats:", err);
@@ -77,6 +83,18 @@ export default function FloorSelectionScreen() {
 
     fetchData();
   }, [propertyId, towerIndex]);
+
+  // 🔍 filter floors by search
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredFloors(floors);
+    } else {
+      const results = floors.filter((f) =>
+        getFloorLabel(f.floorNumber).toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredFloors(results);
+    }
+  }, [searchQuery, floors]);
 
   const getFloorLabel = (num) => {
     if (num === 0) return "Ground Floor";
@@ -91,7 +109,7 @@ export default function FloorSelectionScreen() {
     if (flat.registered) return;
 
     const fullAddress = `${towerName}${flat.flatName}, ${flat.floorName}`;
-    const completeAddress = `${property.location.address}, ${property.location.state} ${property.location.pincode}`
+    const completeAddress = `${property.location.address}, ${property.location.state} ${property.location.pincode}`;
     router.push({
       pathname: "/RegisterProperty",
       params: {
@@ -188,8 +206,6 @@ export default function FloorSelectionScreen() {
     );
   };
 
-
-
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -208,10 +224,33 @@ export default function FloorSelectionScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{towerName}</Text>
+      {/* 🔹 Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+      </View>
+
+      {/* 🔹 Search input */}
+      <View style={styles.searchBar}>
+        <Ionicons
+          name="search-outline"
+          size={18}
+          color="#888"
+          style={{ marginRight: 6 }}
+        />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by floor (e.g., 1st, Ground)"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+
+      <Text style={styles.title}>Tower {towerName}</Text>
 
       <FlatList
-        data={floors}
+        data={filteredFloors}
         keyExtractor={(_, idx) => idx.toString()}
         renderItem={({ item }) => (
           <View>
@@ -233,8 +272,34 @@ export default function FloorSelectionScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", padding: 20 },
-  title: { fontSize: 18, fontWeight: "700", marginBottom: 20, color: "#007AFF" },
+  container: { flex: 1, backgroundColor: "#fff", paddingHorizontal: 16 },
+  header: {
+    paddingTop: 16,
+    marginTop: 25,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f1f1f1",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    marginTop: 16,
+  },
+  backBtn: {
+    backgroundColor: "#7e7c7c25",
+    padding: 6,
+    borderRadius: 20,
+  },
+  searchInput: { flex: 1, paddingVertical: 8 },
+  title: {
+    marginTop: 20,
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 20,
+    color: "#007AFF",
+  },
   floorBox: {
     padding: 15,
     borderWidth: 1,
@@ -242,7 +307,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginVertical: 6,
   },
-  floorText: { fontSize: 16, fontWeight: "600", color: "#007AFF" },
+  floorText: { fontSize: 14, fontWeight: "300", color: "#5A5D6C" },
   card: {
     flexDirection: "row",
     backgroundColor: "#fff",
