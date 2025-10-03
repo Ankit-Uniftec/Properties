@@ -93,7 +93,7 @@ export default function MainScreen() {
       <Text style={styles.cardTitle}>{item.title}</Text>
       <Text style={styles.cardLocation}>
         <Ionicons name="location-outline" size={12} color="gray" />{" "}
-        {item.location?.address || "N/A"}
+        {item.location?.address  || "N/A"}, {item.location?.city  || "N/A"}
       </Text>
     </TouchableOpacity>
   );
@@ -217,7 +217,14 @@ export default function MainScreen() {
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>New Projects</Text>
-                  <TouchableOpacity>
+                  <TouchableOpacity onPress={()=>{
+                    router.push({
+                      pathname:'/SeeAllScreen',
+                      params: { category: 'New Project' }
+                      
+                    });
+                    
+                  }}>
                     <Text style={styles.seeAll}>See All</Text>
                   </TouchableOpacity>
                 </View>
@@ -234,7 +241,14 @@ export default function MainScreen() {
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Luxury Projects</Text>
-                  <TouchableOpacity>
+                  <TouchableOpacity onPress={()=>{
+                    router.push({
+                      pathname:'/SeeAllScreen',
+                      params: { category: 'Luxury Project' }
+                      
+                    });
+                    
+                  }}>
                     <Text style={styles.seeAll}>See All</Text>
                   </TouchableOpacity>
                 </View>

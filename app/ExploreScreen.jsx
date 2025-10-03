@@ -90,7 +90,7 @@ export default function ExploreScreen() {
           {item.title}
         </Text>
         <Text style={styles.trendingLocation} numberOfLines={1}>
-          {formatLocation(item.location)}
+          {item.location?.address}, {item.location?.city}
         </Text>
       </View>
       <TouchableOpacity
@@ -125,7 +125,7 @@ export default function ExploreScreen() {
           {item.title}
         </Text>
         <Text style={styles.trendingLocation} numberOfLines={1}>
-          {formatLocation(item.location)}
+          {item.location?.address}, {item.location?.city}
         </Text>
       </View>
       <TouchableOpacity
