@@ -1,6 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  getAuth,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -12,25 +16,23 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
-
 
 export default function LoginScreen({ onLogin }: { onLogin: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isSignUpMode, setIsSignUpMode] = useState(false); // 👈 mode toggle
 
-
+  const auth = getAuth();
 
   const handleLogin = async () => {
-
     setLoading(true);
-    const auth = getAuth();
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // callback when login successful
+      onLogin?.();
     } catch (error: any) {
       Alert.alert("Login Failed", error.message || "An unknown error occurred");
     } finally {
@@ -38,20 +40,32 @@ export default function LoginScreen({ onLogin }: { onLogin: () => void }) {
     }
   };
 
+  const handleSignUp = async () => {
+    setLoading(true);
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      Alert.alert("Account Created", "Your account has been created successfully!");
+      onLogin?.(); // optional: auto-login after signup
+    } catch (error: any) {
+      Alert.alert("Sign Up Failed", error.message || "An unknown error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Background Image */}
+      {/* Background */}
       <ImageBackground
         source={require("../Images/LoginPageBackground.jpg")}
         style={styles.headerImage}
         resizeMode="cover"
       >
-        {/* Skip Button */}
         <TouchableOpacity style={styles.skipButton}>
           <Text style={styles.skipText}>Skip</Text>
         </TouchableOpacity>
         <LinearGradient
-          colors={["#ffffff1a", "#2564ebbd"]} // white (80% opacity) → blue (80% opacity)
+          colors={["#ffffff1a", "#2564ebbd"]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
           style={styles.gradient}
@@ -61,10 +75,12 @@ export default function LoginScreen({ onLogin }: { onLogin: () => void }) {
       {/* Content */}
       <View style={styles.content}>
         <Text style={styles.title}>
-          Please sign in with your email and password
+          {isSignUpMode
+            ? "Create a new account"
+            : "Please sign in with your email and password"}
         </Text>
 
-        {/* Email Input */}
+        {/* Email */}
         <View style={styles.inputBox}>
           <TextInput
             style={styles.input}
@@ -76,8 +92,7 @@ export default function LoginScreen({ onLogin }: { onLogin: () => void }) {
           />
         </View>
 
-        {/* Password Input */}
-        {/* Password Input */}
+        {/* Password */}
         <View style={styles.passwordBox}>
           <TextInput
             style={styles.passwordInput}
@@ -98,18 +113,31 @@ export default function LoginScreen({ onLogin }: { onLogin: () => void }) {
           </TouchableOpacity>
         </View>
 
-
-        {/* Continue Button */}
+        {/* Submit Button */}
         <TouchableOpacity
           style={styles.continueButton}
-          onPress={handleLogin}
+          onPress={isSignUpMode ? handleSignUp : handleLogin}
           disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text style={styles.continueText}>Continue →</Text>
+            <Text style={styles.continueText}>
+              {isSignUpMode ? "Create Account →" : "Continue →"}
+            </Text>
           )}
+        </TouchableOpacity>
+
+        {/* Switch between Login / Signup */}
+        <TouchableOpacity
+          style={{ marginTop: 16 }}
+          onPress={() => setIsSignUpMode(!isSignUpMode)}
+        >
+          <Text style={{ textAlign: "center", color: "#2563eb" }}>
+            {isSignUpMode
+              ? "Already have an account? Sign in"
+              : "Don't have an account? Create one"}
+          </Text>
         </TouchableOpacity>
 
         {/* OR Divider */}
@@ -119,19 +147,10 @@ export default function LoginScreen({ onLogin }: { onLogin: () => void }) {
           <View style={styles.divider} />
         </View>
 
-        {/* Social Login */}
+        {/* Social Logins (Optional) */}
         <View style={styles.socialRow}>
-          {/* <TouchableOpacity style={styles.socialButton}>
-            <Image
-              source={{
-                uri: "https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg",
-              }}
-              style={{ width: 28, height: 28 }}
-            />
-          </TouchableOpacity> */}
           <TouchableOpacity style={styles.socialButton}>
             <Ionicons name="logo-google" size={30} />
-
           </TouchableOpacity>
           <TouchableOpacity style={styles.socialButton}>
             <Ionicons name="logo-apple" size={30} color="black" />
@@ -161,17 +180,15 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
     overflow: "hidden",
-    height: windowHeight * 0.4, // 40% of screen height
+    height: windowHeight * 0.4,
   },
   gradient: {
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-
     flex: 1,
-    justifyContent: "flex-end", // optional (pushes content to bottom)
+    justifyContent: "flex-end",
   },
   skipButton: {
-
     position: "absolute",
     top: 50,
     right: 16,
@@ -179,7 +196,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-
   },
   skipText: { color: "white", fontWeight: "500" },
   content: { flex: 1, paddingHorizontal: 20, marginTop: 2 },
@@ -187,11 +203,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 20,
     marginBottom: 24,
-
     textAlign: "center",
   },
   inputBox: { marginBottom: 16 },
-  inputBoxRow: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
   input: {
     width: "100%",
     height: 45,
@@ -217,10 +231,7 @@ const styles = StyleSheet.create({
     height: 45,
     fontSize: 16,
   },
-  eyeIcon: {
-    padding: 4,
-  },
-
+  eyeIcon: { padding: 4 },
   continueButton: {
     backgroundColor: "#3572EF",
     marginTop: 20,
